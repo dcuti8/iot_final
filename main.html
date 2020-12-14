@@ -1,0 +1,122 @@
+<html>
+
+<head>
+  <title>[IoT Final Project]Kary, Frankie, Donald</title>
+  <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+  <script type="text/javascript">
+    getData();
+    setInterval(function () { getData(); }, 2000);// get data every 1s
+
+    // Load Charts and the corechart and barchart packages.
+    google.charts.load('current', { 'packages': ['corechart'] });
+    // Draw the pie chart and bar chart when Charts is loaded.
+    google.charts.setOnLoadCallback(drawChart);
+
+    function drawChart(dataArr) {
+      //==========pie chat==========
+      let dataSource = [
+        ["Bin", "Count", { role: "style" }],
+        ['Recyclable', dataArr ? dataArr.filter(x => x.field2 === 'recyclable').length : 0, "blue"],
+        ['Other garbage', dataArr ? dataArr.filter(x => x.field2 === 'other_garbage').length : 0, "gray"],
+        ['Kitchen waste', dataArr ? dataArr.filter(x => x.field2 === 'kitchen_waste').length : 0, "green"],
+        ['Harmful waste', dataArr ? dataArr.filter(x => x.field2 === 'harmful_waste').length : 0, "red"]
+      ];
+
+      var data = google.visualization.arrayToDataTable(dataSource);
+
+      var piechart_options = {
+        title: 'Pie Chart: How many trash in Bin',
+        width: 400,
+        height: 300,
+        is3D: true,
+        slices: {
+          0: { color: 'blue' },
+          1: { color: 'gray' },
+          2: { color: 'green' },
+          3: { color: 'red' }
+        }
+      };
+      var piechart = new google.visualization.PieChart(document.getElementById('piechart_div'));
+      piechart.draw(data, piechart_options);
+
+
+      //==========bar chat==========
+      var view = new google.visualization.DataView(data);
+      view.setColumns([0, 1,
+        {
+          calc: "stringify",
+          sourceColumn: 1,
+          type: "string",
+          role: "annotation"
+        },
+        2]);
+
+      var barchart_options = {
+        title: 'Barchart: How many trash in Bin',
+        width: 400,
+        height: 300,
+        bar: { groupWidth: "95%" },
+        legend: { position: "none" },
+      };
+      var barchart = new google.visualization.BarChart(document.getElementById("barchart_div"));
+      barchart.draw(view, barchart_options);
+    }
+
+    //draw table
+    google.charts.load('current', { 'packages': ['table'] });
+    google.charts.setOnLoadCallback(drawTable);
+
+    function drawTable(dataArr) {
+      console.log('dataArr', dataArr)
+
+      var data = new google.visualization.DataTable();
+      data.addColumn('number', 'id');
+      data.addColumn('string', 'Trash');
+      data.addColumn('string', 'Bin');
+      data.addColumn('string', 'Datatime');
+      if (dataArr && dataArr.length > 0) {
+        let tableData = dataArr.slice(0).reverse().map((x) => {
+          return [x.entry_id, x.field1, x.field2, x.created_at]
+        });
+        console.log('tableData', tableData)
+        data.addRows(tableData);
+      }
+
+      var table = new google.visualization.Table(document.getElementById('table_div'));
+
+      table.draw(data, { showRowNumber: true, width: 600, height: 200 });
+    }
+
+    async function getData() {
+      let url = 'https://api.thingspeak.com/channels/1256643/feeds.json';
+      var request = new Request(url, {
+        method: 'GET',
+      });
+      fetch(request)
+        .then((resp) => resp.json()) // Transform the data into json
+        .then(function (data) {
+          console.log(data);
+          let feeds = data.feeds;
+          drawTable(feeds);
+          drawChart(feeds)
+        })
+    }
+  </script>
+
+<body>
+  <!--Table and divs that hold the pie charts-->
+  <table class="columns">
+    <tr>
+      <td>
+        <div id="piechart_div" style="border: 1px solid #ccc"></div>
+      </td>
+      <td>
+        <div id="barchart_div" style="border: 1px solid #ccc"></div>
+      </td>
+    </tr>
+  </table>
+  <div id="table_div" style="margin-top: 10px;"></div>
+
+</body>
+
+</html>
